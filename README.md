@@ -1,2 +1,2 @@
 # asamstore
-Distributed, encrypted time machine.
+Distributed, encrypted storage with version control.

@@ -12,18 +12,22 @@ import (
 )
 
 func main() {
+	config := readConfig(os.Args[1])
+
 	http.HandleFunc("/hello", hello)
 
-	configDir := path.Join(os.Getenv("HOME"), ".config/asamstore")
+	configDir := config.Certificates.Path
 
-	caCert, err := ioutil.ReadFile(path.Join(configDir, "asamstore.cert.pem"))
+	caCert, err := ioutil.ReadFile(path.Join(configDir, config.Certificates.CA))
 	if err != nil {
 		log.Fatal(err)
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
-	cert, err := tls.LoadX509KeyPair(path.Join(configDir, "server.cert.pem"), path.Join(configDir, "server.priv.pem"))
+	serverCert := path.Join(configDir, config.Certificates.ServerCert)
+	serverKey := path.Join(configDir, config.Certificates.ServerKey)
+	cert, err := tls.LoadX509KeyPair(serverCert, serverKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,9 +46,7 @@ func main() {
 		TLSConfig: tlsConfig,
 	}
 
-	err = server.ListenAndServeTLS(
-		path.Join(configDir, "server.cert.pem"),
-		path.Join(configDir, "server.priv.pem"))
+	err = server.ListenAndServeTLS(serverCert, serverKey)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

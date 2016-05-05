@@ -9,7 +9,8 @@ import (
 )
 
 type configuration struct {
-	StorageDir string
+	StorageDir   string
+	HttpsAddress string
 
 	Certificates struct {
 		Path       string

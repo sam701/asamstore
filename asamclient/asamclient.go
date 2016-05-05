@@ -13,6 +13,12 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	app := cli.NewApp()
 	app.Name = "asamclient"
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "config, c",
+			Usage: "path to config.toml",
+		},
+	}
 	app.Commands = []cli.Command{
 		{
 			Name:   "init",

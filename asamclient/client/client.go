@@ -55,30 +55,32 @@ func (c *BlobStorageClient) Put(key string, content io.Reader) {
 		log.Fatalln("ERROR", err)
 	}
 
-	println("resp1", resp.StatusCode)
-
 	switch resp.StatusCode {
 	case 404:
+		// not exists
+
+		// send content to the server
 		resp, err = c.client.Post(c.url+key, "application/octet-stream", content)
 		if err != nil {
 			log.Fatalln("ERROR", err)
 		}
 		if resp.StatusCode != 204 {
-			bb, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatalln("ERROR", err)
-			}
-			println("resp2", resp.StatusCode, string(bb))
+			handleUnexpectedResponse(resp)
 		}
 	case 204:
+		// content already exists
 		log.Println("Key", key, "already exists")
 	default:
-		bb, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalln("ERROR", err)
-		}
-		log.Fatalf("Status %d, message: %s\n", resp.StatusCode, string(bb))
+		handleUnexpectedResponse(resp)
 	}
+}
+
+func handleUnexpectedResponse(resp *http.Response) {
+	bb, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+	log.Fatalf("Status %d, message: %s\n", resp.StatusCode, string(bb))
 }
 
 func (c *BlobStorageClient) Get(key string, w io.Writer) bool {

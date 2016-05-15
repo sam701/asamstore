@@ -73,7 +73,6 @@ func (c *BlobStorageClient) Put(ref schema.BlobRef, content io.Reader) {
 		}
 	case 204:
 		// content already exists
-		log.Println("Key", key, "already exists")
 	default:
 		handleUnexpectedResponse(resp)
 	}

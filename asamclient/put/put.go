@@ -5,10 +5,12 @@ import (
 	"log"
 	"os"
 	"path"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/sam701/asamstore/asamclient/client"
 	"github.com/sam701/asamstore/asamclient/config"
+	"github.com/sam701/asamstore/asamclient/index"
 	"github.com/sam701/asamstore/asamclient/schema"
 )
 
@@ -20,9 +22,30 @@ func PutAction(c *cli.Context) error {
 
 	contentPath := c.Args().First()
 	if contentPath == "" {
-		log.Fatalln("No ontent path provided")
+		log.Fatalln("No content path provided")
 	}
-	putFile(contentPath)
+
+	rootName := c.String("root")
+	if rootName == "" {
+		log.Fatalln("No root given")
+	}
+
+	ix := index.OpenIndex(cfg.IndexDir)
+	rootRef := ix.GetRootRef(rootName)
+	if rootRef == "" {
+		log.Fatalln("No such root", rootName)
+	}
+
+	ref := putFile(contentPath)
+	commits := ix.GetCommits(rootRef)
+	ll := len(commits)
+	if ll > 0 && commits[ll-1].Content == ref {
+		log.Println("No changes")
+	} else {
+		cs := getCommitSchema(rootRef, ref)
+		commitRef := bsClient.PutSchema(cs)
+		ix.AddCommit(&index.Commit{rootRef, commitRef, ref, cs.CommitTime})
+	}
 
 	return nil
 }
@@ -44,6 +67,8 @@ func putFile(filePath string) schema.BlobRef {
 			log.Fatalln("ERROR", err)
 		}
 		entries := []schema.BlobRef{}
+
+		// TODO sort it first
 		for _, fi := range fis {
 			ref := putFile(path.Join(filePath, fi.Name()))
 			entries = append(entries, ref)
@@ -59,25 +84,29 @@ func putFile(filePath string) schema.BlobRef {
 }
 
 func getDirSchema(fi os.FileInfo, entries []schema.BlobRef) *schema.Schema {
-	return &schema.Schema{
-		Version:        1,
-		Type:           schema.ContentTypeDir,
-		FileName:       fi.Name(),
-		UnixPermission: fmt.Sprintf("%#o", fi.Mode()),
-		DirEntries:     entries,
-	}
+	s := schema.NewSchema(schema.ContentTypeDir)
+	s.FileName = fi.Name()
+	s.UnixPermission = fmt.Sprintf("%#o", fi.Mode())
+	s.DirEntries = entries
+	return s
 }
 
 func getFileSchema(fi os.FileInfo, contentRef schema.BlobRef) *schema.Schema {
-	return &schema.Schema{
-		Version:        1,
-		Type:           schema.ContentTypeFile,
-		FileName:       fi.Name(),
-		UnixPermission: fmt.Sprintf("%#o", fi.Mode()),
-		FileParts: []*schema.BytesPart{&schema.BytesPart{
-			Size:       uint64(fi.Size()),
-			Offset:     0,
-			ContentRef: contentRef,
-		}},
-	}
+	s := schema.NewSchema(schema.ContentTypeFile)
+	s.FileName = fi.Name()
+	s.UnixPermission = fmt.Sprintf("%#o", fi.Mode())
+	s.FileParts = []*schema.BytesPart{&schema.BytesPart{
+		Size:       uint64(fi.Size()),
+		Offset:     0,
+		ContentRef: contentRef,
+	}}
+	return s
+}
+
+func getCommitSchema(root, content schema.BlobRef) *schema.Schema {
+	s := schema.NewSchema(schema.ContentTypeCommit)
+	s.RootRef = root
+	s.CommitTime = time.Now().Format(time.RFC3339)
+	s.ContentRef = content
+	return s
 }

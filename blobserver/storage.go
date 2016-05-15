@@ -29,6 +29,7 @@ func (s *DataStore) Put(key string, content io.Reader) error {
 	defer f.Close()
 
 	_, err = io.Copy(f, content)
+	log.Println("New blob", key)
 	return err
 }
 

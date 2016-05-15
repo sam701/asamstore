@@ -28,8 +28,14 @@ func main() {
 			Action: initialize.Initialize,
 		},
 		{
-			Name:      "put",
-			Usage:     "put content into storage",
+			Name:  "put",
+			Usage: "put content into storage",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "root",
+					Usage: "root node",
+				},
+			},
 			ArgsUsage: "<path to content>",
 			Action:    put.PutAction,
 		},

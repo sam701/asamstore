@@ -1,7 +1,7 @@
 package root
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/codegangsta/cli"
 	"github.com/sam701/asamstore/asamclient/client"
@@ -27,7 +27,7 @@ func Root(c *cli.Context) error {
 	ix := index.OpenIndex(conf.IndexDir)
 	ix.AddRoot(newRootName, ref)
 
-	fmt.Println("Root ref:", ref)
+	log.Println("Root ref:", ref)
 
 	return nil
 }

@@ -1,8 +1,10 @@
 package client
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
@@ -11,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/sam701/asamstore/asamclient/config"
+	"github.com/sam701/asamstore/asamclient/schema"
 )
 
 type BlobStorageClient struct {
@@ -49,7 +52,8 @@ func NewClient(c *config.Configuration) *BlobStorageClient {
 	}
 }
 
-func (c *BlobStorageClient) Put(key string, content io.Reader) {
+func (c *BlobStorageClient) Put(ref schema.BlobRef, content io.Reader) {
+	key := string(ref)
 	resp, err := c.client.Get(c.url + key + "?ifExists=true")
 	if err != nil {
 		log.Fatalln("ERROR", err)
@@ -73,6 +77,18 @@ func (c *BlobStorageClient) Put(key string, content io.Reader) {
 	default:
 		handleUnexpectedResponse(resp)
 	}
+}
+
+func (c *BlobStorageClient) PutSchema(s *schema.Schema) schema.BlobRef {
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(s)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+
+	ref := schema.GetBlobRefBytes(buf.Bytes())
+	c.Put(ref, bytes.NewReader(buf.Bytes()))
+	return ref
 }
 
 func handleUnexpectedResponse(resp *http.Response) {

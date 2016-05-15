@@ -1,8 +1,6 @@
 package put
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -50,26 +48,14 @@ func putFile(filePath string) schema.BlobRef {
 			ref := putFile(path.Join(filePath, fi.Name()))
 			entries = append(entries, ref)
 		}
-		return putSchema(getDirSchema(st, entries))
+		return bsClient.PutSchema(getDirSchema(st, entries))
 	} else {
 		contentRef := schema.GetBlobRef(f)
 		f.Seek(0, 0)
-		bsClient.Put(string(contentRef), f)
+		bsClient.Put(contentRef, f)
 
-		return putSchema(getFileSchema(st, contentRef))
+		return bsClient.PutSchema(getFileSchema(st, contentRef))
 	}
-}
-
-func putSchema(s *schema.Schema) schema.BlobRef {
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(s)
-	if err != nil {
-		log.Fatalln("ERROR", err)
-	}
-
-	ref := schema.GetBlobRefBytes(buf.Bytes())
-	bsClient.Put(string(ref), bytes.NewReader(buf.Bytes()))
-	return ref
 }
 
 func getDirSchema(fi os.FileInfo, entries []schema.BlobRef) *schema.Schema {

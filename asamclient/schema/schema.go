@@ -7,7 +7,10 @@ type Schema struct {
 	// for a root
 	RootName string `json:"rootName,omitempty"`
 
-	RootRef BlobRef `json:"root,omitempty"`
+	// for a commit
+	CommitTime string  `json:"commitTime,omitempty"`
+	RootRef    BlobRef `json:"root,omitempty"`
+	ContentRef BlobRef `json:"contentRef,omitempty"`
 
 	FileName string `json:"fileName,omitempty"`
 
@@ -26,7 +29,15 @@ type BytesPart struct {
 type ContentType string
 
 const (
-	ContentTypeFile ContentType = "file"
-	ContentTypeDir              = "dir"
-	ContentTypeRoot             = "root"
+	ContentTypeFile   ContentType = "file"
+	ContentTypeDir                = "dir"
+	ContentTypeRoot               = "root"
+	ContentTypeCommit             = "commit"
 )
+
+func NewSchema(contentType ContentType) *Schema {
+	return &Schema{
+		Version: 1,
+		Type:    contentType,
+	}
+}

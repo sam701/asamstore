@@ -15,6 +15,8 @@ type Configuration struct {
 	CAKeyFile      string
 	CACertFile     string
 	StorageKeyFile string
+
+	IndexDir string
 }
 
 func ReadConfig(path string) *Configuration {

@@ -80,7 +80,11 @@ func (d *dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.Lo
 			case schema.ContentTypeDir:
 				return newDir(s.FileName, s.UnixPermission, s.DirEntries), nil
 			case schema.ContentTypeFile:
-				return newFile(s.FileName, s.UnixPermission, s.FileParts), nil
+				return &file{
+					name:           s.FileName,
+					unixPermission: getFileMode(s.UnixPermission),
+					parts:          s.FileParts,
+				}, nil
 			}
 		}
 	}

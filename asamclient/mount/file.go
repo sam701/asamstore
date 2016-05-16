@@ -30,7 +30,16 @@ func (f *file) Type() fuse.DirentType {
 	return fuse.DT_File
 }
 
+func (f *file) size() uint64 {
+	var s uint64
+	for _, bp := range f.parts {
+		s += bp.Size
+	}
+	return s
+}
+
 func (f *file) Attr(ctx context.Context, attr *fuse.Attr) error {
+	attr.Size = f.size()
 	attr.Mode = f.unixPermission
 	attr.Uid = userId
 	attr.Gid = groupId

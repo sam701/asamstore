@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -23,6 +24,11 @@ func PutAction(c *cli.Context) error {
 	contentPath := c.Args().First()
 	if contentPath == "" {
 		log.Fatalln("No content path provided")
+	}
+	var err error
+	contentPath, err = filepath.Abs(contentPath)
+	if err != nil {
+		log.Fatalln("ERROR", err)
 	}
 
 	rootName := c.String("root")

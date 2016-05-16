@@ -25,10 +25,8 @@ func (r *rootNode) Attr(ctx context.Context, attr *fuse.Attr) error {
 
 func (r *rootNode) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	res := []fuse.Dirent{}
-	if r.commits == nil {
-		r.commits = bsIndex.GetCommits(r.ref)
-	}
-	for _, c := range r.commits {
+
+	for _, c := range r.getCommits() {
 		res = append(res, fuse.Dirent{
 			Name: c.CommitTime,
 			Type: fuse.DT_Dir,
@@ -37,8 +35,15 @@ func (r *rootNode) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	return res, nil
 }
 
+func (r *rootNode) getCommits() []*index.Commit {
+	if r.commits == nil {
+		r.commits = bsIndex.GetCommits(r.ref)
+	}
+	return r.commits
+}
+
 func (r *rootNode) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
-	for _, c := range r.commits {
+	for _, c := range r.getCommits() {
 		if c.CommitTime == req.Name {
 			dirSchema := bsClient.GetSchema(c.Content)
 			if dirSchema == nil {

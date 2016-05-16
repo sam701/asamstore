@@ -15,7 +15,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	app := cli.NewApp()
 	app.Name = "asamclient"
-	app.Version = "0.1.0"
+	app.Version = "0.2.0"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "config, c",

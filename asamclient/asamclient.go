@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/sam701/asamstore/asamclient/initialize"
+	"github.com/sam701/asamstore/asamclient/mount"
 	"github.com/sam701/asamstore/asamclient/put"
 	"github.com/sam701/asamstore/asamclient/root"
 )
@@ -50,6 +51,12 @@ func main() {
 				},
 			},
 			Action: root.Root,
+		},
+		{
+			Name:      "mount",
+			Usage:     "mount storage",
+			ArgsUsage: "<mount point>",
+			Action:    mount.Mount,
 		},
 	}
 	app.Run(os.Args)

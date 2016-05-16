@@ -98,7 +98,8 @@ func handleUnexpectedResponse(resp *http.Response) {
 	log.Fatalf("Status %d, message: %s\n", resp.StatusCode, string(bb))
 }
 
-func (c *BlobStorageClient) Get(key string, w io.Writer) bool {
+func (c *BlobStorageClient) Get(ref schema.BlobRef, w io.Writer) bool {
+	key := string(ref)
 	resp, err := c.client.Get(c.url + key)
 	if err != nil {
 		log.Fatalln("ERROR", err)
@@ -112,4 +113,19 @@ func (c *BlobStorageClient) Get(key string, w io.Writer) bool {
 		log.Fatalln("ERROR", err)
 	}
 	return true
+}
+
+func (c *BlobStorageClient) GetSchema(ref schema.BlobRef) *schema.Schema {
+	var buf bytes.Buffer
+	ok := c.Get(ref, &buf)
+	if ok {
+		var s schema.Schema
+		err := json.NewDecoder(bytes.NewReader(buf.Bytes())).Decode(&s)
+		if err != nil {
+			log.Fatalln("ERROR", err)
+		}
+		return &s
+	} else {
+		return nil
+	}
 }

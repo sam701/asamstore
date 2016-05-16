@@ -57,6 +57,12 @@ func Mount(c *cli.Context) error {
 	return nil
 }
 
+func logUnmountAndExit(args ...interface{}) {
+	log.Println(args...)
+	fuse.Unmount(mountPoint)
+	os.Exit(1)
+}
+
 func waitForUnmount() {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)

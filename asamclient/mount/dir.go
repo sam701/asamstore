@@ -1,7 +1,6 @@
 package mount
 
 import (
-	"log"
 	"os"
 	"strconv"
 
@@ -98,7 +97,7 @@ func getDtType(s *schema.Schema) fuse.DirentType {
 	case schema.ContentTypeFile:
 		return fuse.DT_File
 	default:
-		log.Fatalln("Unknown schema type:", s.Type)
+		logUnmountAndExit("Unknown schema type:", s.Type)
 	}
 	return fuse.DT_Unknown
 }
@@ -106,7 +105,7 @@ func getDtType(s *schema.Schema) fuse.DirentType {
 func getFileMode(unixPermission string) os.FileMode {
 	i, err := strconv.ParseUint(unixPermission, 8, 32)
 	if err != nil {
-		log.Fatalln("ERROR", err)
+		logUnmountAndExit("ERROR", err)
 	}
 	return os.FileMode(i)
 }

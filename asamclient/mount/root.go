@@ -45,11 +45,9 @@ func (r *rootNode) getCommits() []*index.Commit {
 func (r *rootNode) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
 	for _, c := range r.getCommits() {
 		if c.CommitTime == req.Name {
-			dirSchema := bsClient.GetSchema(c.Content)
-			if dirSchema == nil {
-				panic("No such blob: " + c.Content)
-			}
-			return newDir(c.CommitTime, dirSchema.UnixPermission, dirSchema.DirEntries), nil
+			return &commit{
+				contentRef: c.Content,
+			}, nil
 		}
 	}
 	return nil, fuse.ENOENT

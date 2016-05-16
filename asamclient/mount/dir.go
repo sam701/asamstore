@@ -72,19 +72,24 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	return res, nil
 }
 
+func nodeFromSchema(s *schema.Schema) fs.Node {
+	switch s.Type {
+	case schema.ContentTypeDir:
+		return newDir(s.FileName, s.UnixPermission, s.DirEntries)
+	case schema.ContentTypeFile:
+		return &file{
+			name:           s.FileName,
+			unixPermission: getFileMode(s.UnixPermission),
+			parts:          s.FileParts,
+		}
+	}
+	return nil
+}
+
 func (d *dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
 	for _, s := range d.getEntriesSchemas() {
 		if s.FileName == req.Name {
-			switch s.Type {
-			case schema.ContentTypeDir:
-				return newDir(s.FileName, s.UnixPermission, s.DirEntries), nil
-			case schema.ContentTypeFile:
-				return &file{
-					name:           s.FileName,
-					unixPermission: getFileMode(s.UnixPermission),
-					parts:          s.FileParts,
-				}, nil
-			}
+			return nodeFromSchema(s), nil
 		}
 	}
 	return nil, fuse.ENOENT

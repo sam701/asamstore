@@ -2,7 +2,6 @@ package mount
 
 import (
 	"bytes"
-	"log"
 	"os"
 
 	"bazil.org/fuse"
@@ -44,7 +43,7 @@ func (f *file) ReadAll(ctx context.Context) ([]byte, error) {
 	var buf bytes.Buffer
 	for _, part := range f.parts {
 		if ok := bsClient.Get(part.ContentRef, &buf); !ok {
-			log.Fatalln("Cannot read blob", part.ContentRef)
+			logUnmountAndExit("Cannot read blob", part.ContentRef)
 		}
 	}
 	return buf.Bytes(), nil

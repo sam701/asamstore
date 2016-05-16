@@ -2,8 +2,11 @@ package mount
 
 import (
 	"log"
+	"os"
+	"os/signal"
 	"os/user"
 	"strconv"
+	"syscall"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -17,9 +20,10 @@ var bsClient *client.BlobStorageClient
 var bsIndex *index.Index
 
 var userId, groupId uint32
+var mountPoint string
 
 func Mount(c *cli.Context) error {
-	mountPoint := c.Args().First()
+	mountPoint = c.Args().First()
 	if mountPoint == "" {
 		cli.ShowCommandHelp(c, "mount")
 		return nil
@@ -31,23 +35,40 @@ func Mount(c *cli.Context) error {
 
 	readUserAndGroupId()
 
-	ctx, err := fuse.Mount(mountPoint)
+	var err error
+	var conn *fuse.Conn
+	conn, err = fuse.Mount(mountPoint)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
-	defer ctx.Close()
+	defer conn.Close()
 
-	err = fs.Serve(ctx, &FS{})
+	go waitForUnmount()
+	err = fs.Serve(conn, &FS{})
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
 
-	<-ctx.Ready
-	if err := ctx.MountError; err != nil {
+	<-conn.Ready
+	if err = conn.MountError; err != nil {
 		log.Fatalln(err)
 	}
 
 	return nil
+}
+
+func logUnmountAndExit(args ...interface{}) {
+	log.Println(args...)
+	fuse.Unmount(mountPoint)
+	os.Exit(1)
+}
+
+func waitForUnmount() {
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	<-c
+	log.Println("Unmounting...")
+	fuse.Unmount(mountPoint)
 }
 
 func readUserAndGroupId() {

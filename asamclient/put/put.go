@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -74,7 +75,7 @@ func putFile(filePath string) schema.BlobRef {
 		}
 		entries := []schema.BlobRef{}
 
-		// TODO sort it first
+		sort.Sort(byName(fis))
 		for _, fi := range fis {
 			ref := putFile(path.Join(filePath, fi.Name()))
 			entries = append(entries, ref)
@@ -88,6 +89,12 @@ func putFile(filePath string) schema.BlobRef {
 		return bsClient.PutSchema(getFileSchema(st, contentRef))
 	}
 }
+
+type byName []os.FileInfo
+
+func (a byName) Len() int           { return len(a) }
+func (a byName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byName) Less(i, j int) bool { return a[i].Name() < a[j].Name() }
 
 func getDirSchema(fi os.FileInfo, entries []schema.BlobRef) *schema.Schema {
 	s := schema.NewSchema(schema.ContentTypeDir)

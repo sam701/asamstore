@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/sam701/asamstore/asamclient/get"
 	"github.com/sam701/asamstore/asamclient/initialize"
 	"github.com/sam701/asamstore/asamclient/mount"
 	"github.com/sam701/asamstore/asamclient/put"
@@ -39,6 +40,12 @@ func main() {
 			},
 			ArgsUsage: "<path to content>",
 			Action:    put.PutAction,
+		},
+		{
+			Name:      "get",
+			Usage:     "print ref content",
+			ArgsUsage: "<ref>",
+			Action:    get.Get,
 		},
 		{
 			Name:      "root",

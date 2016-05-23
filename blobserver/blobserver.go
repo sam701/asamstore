@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -57,6 +58,7 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("Cannot post key", key, err)
 			w.WriteHeader(500)
+			fmt.Fprintln(w, "Cannot post key", key, err)
 		} else {
 			w.WriteHeader(204)
 		}

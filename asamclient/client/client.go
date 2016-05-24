@@ -110,10 +110,7 @@ func (c *BlobStorageClient) Get(ref schema.BlobRef, w io.Writer) bool {
 	if resp.StatusCode == 404 {
 		return false
 	}
-	_, err = io.Copy(w, c.enc.decryptingReader(resp.Body))
-	if err != nil {
-		log.Fatalln("ERROR", err)
-	}
+	copyAndVerify(w, c.enc.decryptingReader(resp.Body), ref)
 	return true
 }
 

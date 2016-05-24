@@ -5,7 +5,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/pem"
+	"io"
 	"log"
 	"math/big"
 	"os"
@@ -24,6 +26,8 @@ func Initialize(c *cli.Context) error {
 
 	serverKey := createPrivateKey(path.Join(configDir, "server.priv.pem"))
 	createCertificate(serverKey, caCert, path.Join(configDir, "server.cert.pem"))
+
+	generateAndSaveAESKey(path.Join(configDir, "blob.key"))
 
 	return nil
 }
@@ -87,6 +91,26 @@ func savePem(pemFilePath string, derBytes []byte, keyType string) {
 	}
 	defer f.Close()
 	err = pem.Encode(f, &pem.Block{Type: keyType, Bytes: derBytes})
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+}
+
+func generateAndSaveAESKey(pathToSave string) {
+	f, err := os.OpenFile(pathToSave, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Fatalln("ERROR: cannot open file:", err)
+	}
+	defer f.Close()
+
+	keyBuf := make([]byte, 32)
+	_, err = rand.Read(keyBuf)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+
+	encodedKey := base64.StdEncoding.EncodeToString(keyBuf)
+	_, err = io.WriteString(f, encodedKey)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}

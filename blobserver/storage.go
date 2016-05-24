@@ -8,28 +8,47 @@ import (
 )
 
 type DataStore struct {
-	Path string
+	Path    string
+	tempDir string
 }
 
-func OpenDataStore(path string) *DataStore {
-	os.MkdirAll(path, 0700)
+func OpenDataStore(storagePath string) *DataStore {
+	tmp := path.Join(storagePath, "tmp")
+	os.MkdirAll(tmp, 0700)
 	return &DataStore{
-		Path: path,
+		Path:    storagePath,
+		tempDir: tmp,
 	}
 }
 
 func (s *DataStore) Put(key string, content io.Reader) error {
+	tmpFilePath := path.Join(s.tempDir, key)
+
+	err := s.writeTempFile(tmpFilePath, content)
+	if err != nil {
+		return err
+	}
+
 	p := s.pathForKey(key)
 	os.MkdirAll(path.Dir(p), 0700)
 
-	f, err := os.OpenFile(p, os.O_CREATE|os.O_WRONLY, 0600)
+	err = os.Rename(tmpFilePath, p)
+	if err != nil {
+		return err
+	}
+
+	log.Println("New blob", key)
+	return nil
+}
+
+func (s *DataStore) writeTempFile(tmpFilePath string, content io.Reader) error {
+	f, err := os.OpenFile(tmpFilePath, os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
 	defer f.Close()
 
 	_, err = io.Copy(f, content)
-	log.Println("New blob", key)
 	return err
 }
 

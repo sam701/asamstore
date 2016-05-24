@@ -19,6 +19,7 @@ import (
 type BlobStorageClient struct {
 	url    string
 	client *http.Client
+	enc    *encrypter
 }
 
 func NewClient(c *config.Configuration) *BlobStorageClient {
@@ -49,6 +50,7 @@ func NewClient(c *config.Configuration) *BlobStorageClient {
 	return &BlobStorageClient{
 		url:    strings.TrimRight(c.BlobServerURL, "/") + "/blob/",
 		client: &http.Client{Transport: transport},
+		enc:    newEncrypter(path.Join(configDir, c.BlobKeyFile)),
 	}
 }
 
@@ -64,7 +66,7 @@ func (c *BlobStorageClient) Put(ref schema.BlobRef, content io.Reader) {
 		// not exists
 
 		// send content to the server
-		resp, err = c.client.Post(c.url+key, "application/octet-stream", content)
+		resp, err = c.client.Post(c.url+key, "application/octet-stream", c.enc.encryptingReader(content))
 		if err != nil {
 			log.Fatalln("ERROR", err)
 		}
@@ -108,10 +110,7 @@ func (c *BlobStorageClient) Get(ref schema.BlobRef, w io.Writer) bool {
 	if resp.StatusCode == 404 {
 		return false
 	}
-	_, err = io.Copy(w, resp.Body)
-	if err != nil {
-		log.Fatalln("ERROR", err)
-	}
+	copyAndVerify(w, c.enc.decryptingReader(resp.Body), ref)
 	return true
 }
 

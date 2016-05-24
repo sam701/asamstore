@@ -11,10 +11,10 @@ import (
 type Configuration struct {
 	BlobServerURL string
 
-	ConfigDir      string
-	CAKeyFile      string
-	CACertFile     string
-	StorageKeyFile string
+	ConfigDir   string
+	CAKeyFile   string
+	CACertFile  string
+	BlobKeyFile string
 
 	IndexDir string
 }

@@ -1,8 +1,10 @@
 package mount
 
 import (
+	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/sam701/asamstore/asamclient/schema"
 
@@ -20,6 +22,7 @@ type node interface {
 type dir struct {
 	name           string
 	unixPermission os.FileMode
+	unixMTime      time.Time
 	entries        []schema.BlobRef
 	entriesSchemas []*schema.Schema
 }
@@ -46,16 +49,23 @@ func (d *dir) getEntriesSchemas() []*schema.Schema {
 	return d.entriesSchemas
 }
 
-func newDir(name string, permission string, entries []schema.BlobRef) *dir {
+func newDir(s *schema.Schema) *dir {
+	t, err := time.Parse(time.RFC3339, s.UnixMtime)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+
 	return &dir{
-		name:           name,
-		unixPermission: getFileMode(permission),
-		entries:        entries,
+		name:           s.FileName,
+		unixPermission: getFileMode(s.UnixPermission),
+		unixMTime:      t,
+		entries:        s.DirEntries,
 	}
 }
 
 func (d *dir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Mode = d.unixPermission
+	attr.Mtime = d.unixMTime
 	attr.Uid = userId
 	attr.Gid = groupId
 	return nil
@@ -75,11 +85,17 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 func nodeFromSchema(s *schema.Schema) fs.Node {
 	switch s.Type {
 	case schema.ContentTypeDir:
-		return newDir(s.FileName, s.UnixPermission, s.DirEntries)
+		return newDir(s)
 	case schema.ContentTypeFile:
+		t, err := time.Parse(time.RFC3339, s.UnixMtime)
+		if err != nil {
+			log.Fatalln("ERROR", err)
+		}
+
 		return &file{
 			name:           s.FileName,
 			unixPermission: getFileMode(s.UnixPermission),
+			unixMTime:      t,
 			parts:          s.FileParts,
 		}
 	}

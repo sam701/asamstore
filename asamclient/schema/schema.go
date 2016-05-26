@@ -15,6 +15,7 @@ type Schema struct {
 	FileName string `json:"fileName,omitempty"`
 
 	UnixPermission string `json:"unixPermission,omitempty"`
+	UnixMtime      string `json:"unixMtime,omitempty"`
 
 	FileParts  []*BytesPart `json:"fileParts,omitempty"`
 	DirEntries []BlobRef    `json:"dirEntries,omitempty"`

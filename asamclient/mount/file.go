@@ -3,6 +3,7 @@ package mount
 import (
 	"bytes"
 	"os"
+	"time"
 
 	"bazil.org/fuse"
 	"github.com/sam701/asamstore/asamclient/schema"
@@ -12,6 +13,7 @@ import (
 type file struct {
 	name           string
 	unixPermission os.FileMode
+	unixMTime      time.Time
 	parts          []*schema.BytesPart
 }
 
@@ -34,6 +36,7 @@ func (f *file) size() uint64 {
 func (f *file) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Size = f.size()
 	attr.Mode = f.unixPermission
+	attr.Mtime = f.unixMTime
 	attr.Uid = userId
 	attr.Gid = groupId
 	return nil

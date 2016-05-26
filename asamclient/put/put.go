@@ -100,6 +100,7 @@ func getDirSchema(fi os.FileInfo, entries []schema.BlobRef) *schema.Schema {
 	s := schema.NewSchema(schema.ContentTypeDir)
 	s.FileName = fi.Name()
 	s.UnixPermission = fmt.Sprintf("%#o", fi.Mode())
+	s.UnixMtime = fi.ModTime().Format(time.RFC3339)
 	s.DirEntries = entries
 	return s
 }
@@ -108,6 +109,7 @@ func getFileSchema(fi os.FileInfo, contentRef schema.BlobRef) *schema.Schema {
 	s := schema.NewSchema(schema.ContentTypeFile)
 	s.FileName = fi.Name()
 	s.UnixPermission = fmt.Sprintf("%#o", fi.Mode())
+	s.UnixMtime = fi.ModTime().Format(time.RFC3339)
 	s.FileParts = []*schema.BytesPart{&schema.BytesPart{
 		Size:       uint64(fi.Size()),
 		Offset:     0,

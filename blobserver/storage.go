@@ -8,16 +8,18 @@ import (
 )
 
 type DataStore struct {
-	Path    string
-	tempDir string
+	blobsPath string
+	tempDir   string
 }
 
 func OpenDataStore(storagePath string) *DataStore {
+	bp := path.Join(storagePath, "blobs")
 	tmp := path.Join(storagePath, "tmp")
+	os.MkdirAll(bp, 0700)
 	os.MkdirAll(tmp, 0700)
 	return &DataStore{
-		Path:    storagePath,
-		tempDir: tmp,
+		blobsPath: bp,
+		tempDir:   tmp,
 	}
 }
 
@@ -55,7 +57,7 @@ func (s *DataStore) writeTempFile(tmpFilePath string, content io.Reader) error {
 func (s *DataStore) pathForKey(key string) string {
 	p1 := key[:2]
 	p2 := key[2:4]
-	return path.Join(s.Path, p1, p2, key)
+	return path.Join(s.blobsPath, p1, p2, key)
 }
 
 func (s *DataStore) Exists(key string) bool {

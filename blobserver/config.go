@@ -1,34 +1,37 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
-	"github.com/naoina/toml"
+	"gopkg.in/yaml.v2"
 )
 
 type configuration struct {
-	StorageDir   string
-	HttpsAddress string
+	StorageDir    string `yaml:"storageDir"`
+	ServerAddress string `yaml:"serverAddress"`
 
-	Certificates struct {
-		Path       string
-		CA         string
-		ServerKey  string
-		ServerCert string
-	}
+	Certificates certificateConfig `yaml:"certificates"`
+	Remotes      map[string]string `yaml:"remotes"`
+}
+
+type certificateConfig struct {
+	Path       string `yaml:"path"`
+	CA         string `yaml:"ca"`
+	ServerKey  string `yaml:"serverKey"`
+	ServerCert string `yaml:"serverCert"`
 }
 
 func readConfig(pathToConfig string) *configuration {
-	f, err := os.Open(pathToConfig)
+	bb, err := ioutil.ReadFile(pathToConfig)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
-	defer f.Close()
 
 	var c configuration
-	err = toml.NewDecoder(f).Decode(&c)
+	err = yaml.Unmarshal(bb, &c)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}

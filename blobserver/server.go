@@ -36,11 +36,11 @@ func startHttpsServer(config *configuration) {
 	tlsConfig.BuildNameToCertificate()
 
 	server := &http.Server{
-		Addr:      config.HttpsAddress,
+		Addr:      config.ServerAddress,
 		TLSConfig: tlsConfig,
 	}
 
-	log.Println("Listening on", config.HttpsAddress)
+	log.Println("Listening on", config.ServerAddress)
 	err = server.ListenAndServeTLS(serverCert, serverKey)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

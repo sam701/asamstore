@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/naoina/toml"
@@ -11,16 +12,26 @@ import (
 type Configuration struct {
 	BlobServerURL string
 
-	ConfigDir   string
-	CAKeyFile   string
-	CACertFile  string
-	BlobKeyFile string
-
-	IndexDir string
+	CertificateDir string
+	IndexDir       string
 }
 
-func ReadConfig(path string) *Configuration {
-	f, err := os.Open(path)
+func (c *Configuration) CAKeyFile() string {
+	return path.Join(c.CertificateDir, "asamstore.priv.pem")
+}
+
+func (c *Configuration) CACertFile() string {
+	return path.Join(c.CertificateDir, "asamstore.cert.pem")
+}
+func (c *Configuration) BlobKeyFile() string {
+	return path.Join(c.CertificateDir, "blob.key")
+}
+
+func ReadConfig(configPath string) *Configuration {
+	if configPath == "" {
+		configPath = path.Join(os.Getenv("HOME"), ".config/asamstore/config.toml")
+	}
+	f, err := os.Open(configPath)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
@@ -31,7 +42,8 @@ func ReadConfig(path string) *Configuration {
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
-	c.ConfigDir = strings.Replace(c.ConfigDir, "~", os.Getenv("HOME"), 1)
+	c.CertificateDir = strings.Replace(c.CertificateDir, "~", os.Getenv("HOME"), 1)
+	c.IndexDir = strings.Replace(c.IndexDir, "~", os.Getenv("HOME"), 1)
 
 	return c
 }

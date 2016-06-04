@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"path"
 	"strings"
 
 	"github.com/sam701/asamstore/asamclient/config"
@@ -23,15 +22,12 @@ type BlobStorageClient struct {
 }
 
 func NewClient(c *config.Configuration) *BlobStorageClient {
-	configDir := c.ConfigDir
-
-	certFile := path.Join(configDir, c.CACertFile)
-	cert, err := tls.LoadX509KeyPair(certFile, path.Join(configDir, c.CAKeyFile))
+	cert, err := tls.LoadX509KeyPair(c.CACertFile(), c.CAKeyFile())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	caCert, err := ioutil.ReadFile(certFile)
+	caCert, err := ioutil.ReadFile(c.CACertFile())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +46,7 @@ func NewClient(c *config.Configuration) *BlobStorageClient {
 	return &BlobStorageClient{
 		url:    strings.TrimRight(c.BlobServerURL, "/") + "/blobs/",
 		client: &http.Client{Transport: transport},
-		enc:    newEncrypter(path.Join(configDir, c.BlobKeyFile)),
+		enc:    newEncrypter(c.BlobKeyFile()),
 	}
 }
 

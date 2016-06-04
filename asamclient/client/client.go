@@ -48,7 +48,7 @@ func NewClient(c *config.Configuration) *BlobStorageClient {
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 
 	return &BlobStorageClient{
-		url:    strings.TrimRight(c.BlobServerURL, "/") + "/blob/",
+		url:    strings.TrimRight(c.BlobServerURL, "/") + "/blobs/",
 		client: &http.Client{Transport: transport},
 		enc:    newEncrypter(path.Join(configDir, c.BlobKeyFile)),
 	}

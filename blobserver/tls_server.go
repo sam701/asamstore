@@ -9,7 +9,7 @@ import (
 	"path"
 )
 
-func startHttpsServer(config *configuration) {
+func startHttpsServer() {
 	configDir := config.Certificates.Path
 
 	caCert, err := ioutil.ReadFile(path.Join(configDir, config.Certificates.CA))

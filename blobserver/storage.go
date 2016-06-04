@@ -1,15 +1,19 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 type DataStore struct {
 	blobsPath string
 	tempDir   string
+	stateHash string
 }
 
 func OpenDataStore(storagePath string) *DataStore {
@@ -79,4 +83,29 @@ func (s *DataStore) Get(key string, w io.Writer) error {
 	defer f.Close()
 	_, err = io.Copy(w, f)
 	return err
+}
+
+func (s *DataStore) walkKeys(keyHandler func(key string)) error {
+	return filepath.Walk(s.blobsPath, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && len(info.Name()) > 4 {
+			keyHandler(info.Name())
+		}
+		return nil
+	})
+}
+
+const blobsHash = "blobs-hash.txt"
+
+func (s *DataStore) saveStateHash() string {
+	hash := md5.New()
+	s.walkKeys(func(key string) {
+		hash.Write([]byte(key))
+	})
+
+	s.stateHash = hex.EncodeToString(hash.Sum(nil))
+	return s.stateHash
+}
+
+func (s *DataStore) getStateHash() string {
+	return s.stateHash
 }

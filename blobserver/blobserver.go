@@ -37,6 +37,9 @@ func startServer(c *cli.Context) error {
 	config = readConfig(cfgPath)
 	store = OpenDataStore(config.StorageDir)
 
+	initTlsClient()
+	go syncWithAllRemotes()
+
 	setupHttpHandlers()
 	startHttpsServer()
 	return nil

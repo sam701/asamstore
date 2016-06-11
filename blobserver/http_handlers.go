@@ -15,6 +15,7 @@ func setupHttpHandlers() {
 	http.HandleFunc("/blobs/", handleBlob)
 	http.HandleFunc("/blobs/keys", getSortedKeys)
 	http.HandleFunc("/blobs/keys/hash", writeStateHash)
+	http.HandleFunc("/sync", syncRemotes)
 }
 
 func handleBlob(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +40,7 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(404)
 			}
 		} else {
-			err := store.Get(key, w)
+			r, err := store.Get(key)
 			if err != nil {
 				if os.IsNotExist(err) {
 					w.WriteHeader(404)
@@ -47,6 +48,11 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 					log.Println("Cannot write key", key, err)
 					w.WriteHeader(500)
 				}
+			}
+			defer r.Close()
+			_, err = io.Copy(w, r)
+			if err != nil {
+				log.Println("ERROR: could not copy blob content", err)
 			}
 		}
 	case "POST":
@@ -78,5 +84,6 @@ func writeStateHash(w http.ResponseWriter, r *http.Request) {
 }
 
 func syncRemotes(w http.ResponseWriter, r *http.Request) {
-
+	go syncWithAllRemotes()
+	io.WriteString(w, "Ok")
 }

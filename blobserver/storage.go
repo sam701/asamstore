@@ -21,10 +21,12 @@ func OpenDataStore(storagePath string) *DataStore {
 	tmp := path.Join(storagePath, "tmp")
 	os.MkdirAll(bp, 0700)
 	os.MkdirAll(tmp, 0700)
-	return &DataStore{
+	s := &DataStore{
 		blobsPath: bp,
 		tempDir:   tmp,
 	}
+	s.saveStateHash()
+	return s
 }
 
 func (s *DataStore) Put(key string, content io.Reader) error {
@@ -75,14 +77,8 @@ func (s *DataStore) Exists(key string) bool {
 	return false
 }
 
-func (s *DataStore) Get(key string, w io.Writer) error {
-	f, err := os.Open(s.pathForKey(key))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = io.Copy(w, f)
-	return err
+func (s *DataStore) Get(key string) (io.ReadCloser, error) {
+	return os.Open(s.pathForKey(key))
 }
 
 func (s *DataStore) walkKeys(keyHandler func(key string)) error {

@@ -44,15 +44,19 @@ func NewClient(c *config.Configuration) *BlobStorageClient {
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 
 	return &BlobStorageClient{
-		url:    strings.TrimRight(c.BlobServerURL, "/") + "/blobs/",
+		url:    strings.TrimRight(c.BlobServerURL, "/"),
 		client: &http.Client{Transport: transport},
 		enc:    newEncrypter(c.BlobKeyFile()),
 	}
 }
 
+func (c *BlobStorageClient) blobUrl(key string) string {
+	return c.url + "/blobs/" + key
+}
+
 func (c *BlobStorageClient) Put(ref schema.BlobRef, content io.Reader) {
 	key := string(ref)
-	resp, err := c.client.Get(c.url + key + "?ifExists=true")
+	resp, err := c.client.Get(c.blobUrl(key) + "?ifExists=true")
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
@@ -62,7 +66,7 @@ func (c *BlobStorageClient) Put(ref schema.BlobRef, content io.Reader) {
 		// not exists
 
 		// send content to the server
-		resp, err = c.client.Post(c.url+key, "application/octet-stream", c.enc.encryptingReader(content))
+		resp, err = c.client.Post(c.blobUrl(key), "application/octet-stream", c.enc.encryptingReader(content))
 		if err != nil {
 			log.Fatalln("ERROR", err)
 		}
@@ -98,7 +102,7 @@ func handleUnexpectedResponse(resp *http.Response) {
 
 func (c *BlobStorageClient) Get(ref schema.BlobRef, w io.Writer) bool {
 	key := string(ref)
-	resp, err := c.client.Get(c.url + key)
+	resp, err := c.client.Get(c.blobUrl(key))
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
@@ -122,5 +126,16 @@ func (c *BlobStorageClient) GetSchema(ref schema.BlobRef) *schema.Schema {
 		return &s
 	} else {
 		return nil
+	}
+}
+
+func (c *BlobStorageClient) UpdateServerState() {
+	resp, err := c.client.Get(c.url + "/updateState")
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+
+	if resp.StatusCode != 204 {
+		log.Fatalln("Unexpected response for /updateState", resp.StatusCode)
 	}
 }

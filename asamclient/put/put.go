@@ -52,6 +52,7 @@ func PutAction(c *cli.Context) error {
 		cs := getCommitSchema(rootRef, ref)
 		commitRef := bsClient.PutSchema(cs)
 		ix.AddCommit(&index.Commit{rootRef, commitRef, ref, cs.CommitTime})
+		bsClient.UpdateServerState()
 	}
 
 	return nil

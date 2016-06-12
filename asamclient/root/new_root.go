@@ -29,5 +29,7 @@ func Root(c *cli.Context) error {
 
 	log.Println("Root ref:", ref)
 
+	cl.UpdateServerState()
+
 	return nil
 }

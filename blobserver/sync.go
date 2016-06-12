@@ -56,7 +56,7 @@ func (s *remoteSync) sendLocalBlob(key string) error {
 }
 
 func (s *remoteSync) needSync() bool {
-	log.Println("Syncing with", s.name)
+	log.Println("needSync?", s.name)
 	res, err := tlsHttpCilent.Get(s.url + "/blobs/keys/hash")
 	if err != nil {
 		log.Println("Remote", s.name, "is not available")
@@ -92,21 +92,55 @@ func (s *remoteSync) sync() {
 
 	decompressing := snappy.NewReader(res.Body)
 	remoteKeyScanner := bufio.NewScanner(decompressing)
-	store.walkKeys(func(localKey string) {
+
+	nextRemoteKey := func(localKey string) (string, int) {
 		if remoteKeyScanner.Scan() {
 			remoteKey := remoteKeyScanner.Text()
-			switch strings.Compare(localKey, remoteKey) {
-			case -1:
-				s.sendLocalBlob(localKey)
-			case 1:
-				s.retrieveRemoteBlob(remoteKey)
-			}
+			syncStatus := strings.Compare(localKey, remoteKey)
+			return remoteKey, syncStatus
 		} else {
+			return "", syncStatusSending
+		}
+	}
+
+	remoteKey := ""
+	syncStatus := syncStatusSkipping
+	store.walkKeys(func(localKey string) {
+	readRemoteKey:
+		if syncStatus == syncStatusSending && remoteKey != "" {
+			syncStatus = strings.Compare(localKey, remoteKey)
+		} else {
+			remoteKey, syncStatus = nextRemoteKey(localKey)
+		}
+
+		switch syncStatus {
+		case syncStatusSending:
 			s.sendLocalBlob(localKey)
+
+		case syncStatusReceiving:
+			s.retrieveRemoteBlob(remoteKey)
+			goto readRemoteKey
 		}
 	})
 	for remoteKeyScanner.Scan() {
 		s.retrieveRemoteBlob(remoteKeyScanner.Text())
 	}
 
+}
+
+const (
+	syncStatusSending   = -1
+	syncStatusSkipping  = 0
+	syncStatusReceiving = 1
+)
+
+func (s *remoteSync) compareKeys(localKey, remoteKey string) int {
+	diff := strings.Compare(localKey, remoteKey)
+	switch diff {
+	case -1:
+		s.sendLocalBlob(localKey)
+	case 1:
+		s.retrieveRemoteBlob(remoteKey)
+	}
+	return diff
 }

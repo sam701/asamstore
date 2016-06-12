@@ -15,7 +15,7 @@ func setupHttpHandlers() {
 	http.HandleFunc("/blobs/", handleBlob)
 	http.HandleFunc("/blobs/keys", getSortedKeys)
 	http.HandleFunc("/blobs/keys/hash", writeStateHash)
-	http.HandleFunc("/sync", syncRemotes)
+	http.HandleFunc("/updateState", updateState)
 }
 
 func handleBlob(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,8 @@ func writeStateHash(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, store.getStateHash())
 }
 
-func syncRemotes(w http.ResponseWriter, r *http.Request) {
+func updateState(w http.ResponseWriter, r *http.Request) {
+	store.saveStateHash()
 	go syncWithAllRemotes()
-	io.WriteString(w, "Ok")
+	w.WriteHeader(204)
 }

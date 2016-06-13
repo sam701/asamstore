@@ -1,37 +1,52 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strings"
 
-	"github.com/naoina/toml"
+	"gopkg.in/yaml.v2"
 )
 
 type configuration struct {
-	StorageDir   string
-	HttpsAddress string
+	StorageDir    string `yaml:"storageDir"`
+	ServerAddress string `yaml:"serverAddress"`
 
-	Certificates struct {
-		Path       string
-		CA         string
-		ServerKey  string
-		ServerCert string
-	}
+	Remotes map[string]string `yaml:"remotes"`
+}
+
+func (c *configuration) certsPath() string {
+	return path.Join(c.StorageDir, "certs")
+}
+
+func (c *configuration) CAPath() string {
+	return path.Join(c.certsPath(), "ca.cert.pem")
+}
+
+func (c *configuration) ServerKeyPath() string {
+	return path.Join(c.certsPath(), "server.priv.pem")
+}
+
+func (c *configuration) ServerCertPath() string {
+	return path.Join(c.certsPath(), "server.cert.pem")
 }
 
 func readConfig(pathToConfig string) *configuration {
-	f, err := os.Open(pathToConfig)
+	bb, err := ioutil.ReadFile(pathToConfig)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
-	defer f.Close()
 
 	var c configuration
-	err = toml.NewDecoder(f).Decode(&c)
+	err = yaml.Unmarshal(bb, &c)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
-	c.Certificates.Path = strings.Replace(c.Certificates.Path, "~", os.Getenv("HOME"), 1)
+	c.StorageDir = strings.Replace(c.StorageDir, "~", os.Getenv("HOME"), 1)
+	for k, v := range c.Remotes {
+		c.Remotes[k] = strings.TrimRight(v, "/")
+	}
 	return &c
 }

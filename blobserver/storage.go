@@ -1,15 +1,19 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 type DataStore struct {
 	blobsPath string
 	tempDir   string
+	stateHash string
 }
 
 func OpenDataStore(storagePath string) *DataStore {
@@ -17,10 +21,12 @@ func OpenDataStore(storagePath string) *DataStore {
 	tmp := path.Join(storagePath, "tmp")
 	os.MkdirAll(bp, 0700)
 	os.MkdirAll(tmp, 0700)
-	return &DataStore{
+	s := &DataStore{
 		blobsPath: bp,
 		tempDir:   tmp,
 	}
+	s.saveStateHash()
+	return s
 }
 
 func (s *DataStore) Put(key string, content io.Reader) error {
@@ -71,12 +77,29 @@ func (s *DataStore) Exists(key string) bool {
 	return false
 }
 
-func (s *DataStore) Get(key string, w io.Writer) error {
-	f, err := os.Open(s.pathForKey(key))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = io.Copy(w, f)
-	return err
+func (s *DataStore) Get(key string) (io.ReadCloser, error) {
+	return os.Open(s.pathForKey(key))
+}
+
+func (s *DataStore) walkKeys(keyHandler func(key string)) error {
+	return filepath.Walk(s.blobsPath, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && len(info.Name()) > 4 {
+			keyHandler(info.Name())
+		}
+		return nil
+	})
+}
+
+func (s *DataStore) saveStateHash() string {
+	hash := md5.New()
+	s.walkKeys(func(key string) {
+		hash.Write([]byte(key))
+	})
+
+	s.stateHash = hex.EncodeToString(hash.Sum(nil))
+	return s.stateHash
+}
+
+func (s *DataStore) getStateHash() string {
+	return s.stateHash
 }

@@ -25,8 +25,22 @@ func main() {
 	}
 	app.Commands = []cli.Command{
 		{
-			Name:   "init",
-			Usage:  "initalize the asamstore",
+			Name:  "init",
+			Usage: "initalize the asamstore",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "client",
+					Usage: "initialize client",
+				},
+				cli.BoolFlag{
+					Name:  "blob-server",
+					Usage: "initialize blob server",
+				},
+				cli.StringFlag{
+					Name:  "dest-dir, d",
+					Usage: "destination directory for configuration and certificates",
+				},
+			},
 			Action: initialize.Initialize,
 		},
 		{

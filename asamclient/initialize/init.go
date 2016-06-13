@@ -7,7 +7,9 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
@@ -15,19 +17,36 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/sam701/asamstore/asamclient/config"
 )
 
 func Initialize(c *cli.Context) error {
-	configDir := path.Join(os.Getenv("HOME"), ".config/asamstore")
-	os.MkdirAll(configDir, 0700)
+	destinationDir := c.String("dest-dir")
+	if destinationDir == "" {
+		destinationDir = path.Join(os.Getenv("HOME"), ".config/asamstore")
+	}
+	if _, err := os.Stat(destinationDir); err == nil {
+		fmt.Println("Directory", destinationDir, "already exists")
+		cli.ShowCommandHelp(c, "init")
+		return nil
+	}
+	os.MkdirAll(destinationDir, 0700)
 
-	caKey := createPrivateKey(path.Join(configDir, "asamstore.priv.pem"))
-	caCert := createCertificate(caKey, nil, path.Join(configDir, "asamstore.cert.pem"))
-
-	serverKey := createPrivateKey(path.Join(configDir, "server.priv.pem"))
-	createCertificate(serverKey, caCert, path.Join(configDir, "server.cert.pem"))
-
-	generateAndSaveAESKey(path.Join(configDir, "blob.key"))
+	if c.Bool("client") {
+		caKey := createPrivateKey(path.Join(destinationDir, "asamstore.priv.pem"))
+		createCertificate(&caKey.PublicKey, nil, caKey, path.Join(destinationDir, "asamstore.cert.pem"))
+		generateAndSaveAESKey(path.Join(destinationDir, "blob.key"))
+	} else if c.Bool("blob-server") {
+		cfg := config.ReadConfig(c.GlobalString("config"))
+		caKey := readPrivateKey(cfg.CAKeyFile())
+		caCert := readCertificate(cfg.CACertFile())
+		serverKey := createPrivateKey(path.Join(destinationDir, "server.priv.pem"))
+		createCertificate(&serverKey.PublicKey, caCert, caKey, path.Join(destinationDir, "server.cert.pem"))
+		err := os.Link(cfg.CACertFile(), path.Join(destinationDir, "ca.cert.pem"))
+		if err != nil {
+			log.Fatalln("ERROR", err)
+		}
+	}
 
 	return nil
 }
@@ -41,7 +60,28 @@ func createPrivateKey(saveToPath string) *rsa.PrivateKey {
 	return key
 }
 
-func createCertificate(key *rsa.PrivateKey, parentCert *x509.Certificate, saveToPath string) *x509.Certificate {
+func readPrivateKey(privateKeyPath string) *rsa.PrivateKey {
+	pemBytes, err := ioutil.ReadFile(privateKeyPath)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+
+	block, _ := pem.Decode(pemBytes)
+	derBytes := block.Bytes
+
+	key, err := x509.ParsePKCS1PrivateKey(derBytes)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+	return key
+}
+
+func createCertificate(
+	signeePublicKey *rsa.PublicKey,
+	parentCert *x509.Certificate,
+	signerPrivateKey *rsa.PrivateKey,
+	saveToPath string) *x509.Certificate {
+
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
@@ -70,7 +110,7 @@ func createCertificate(key *rsa.PrivateKey, parentCert *x509.Certificate, saveTo
 		template.ExtKeyUsage = append(template.ExtKeyUsage, x509.ExtKeyUsageServerAuth)
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, parentCert, &key.PublicKey, key)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, parentCert, signeePublicKey, signerPrivateKey)
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
@@ -94,6 +134,23 @@ func savePem(pemFilePath string, derBytes []byte, keyType string) {
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
+}
+
+func readCertificate(pemFilePath string) *x509.Certificate {
+	bb, err := ioutil.ReadFile(pemFilePath)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+
+	block, _ := pem.Decode(bb)
+	derBytes := block.Bytes
+
+	out, err := x509.ParseCertificate(derBytes)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
+
+	return out
 }
 
 func generateAndSaveAESKey(pathToSave string) {

@@ -27,6 +27,8 @@ type BytesPart struct {
 	ContentRef BlobRef `json:"contentRef"`
 }
 
+const MaxFilePartSize = 1024 * 1024 * 16
+
 type ContentType string
 
 const (

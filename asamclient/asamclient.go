@@ -70,6 +70,10 @@ func main() {
 					Name:  "new",
 					Usage: "create new root node",
 				},
+				cli.BoolFlag{
+					Name:  "list, l",
+					Usage: "list roots",
+				},
 			},
 			Action: root.Root,
 		},

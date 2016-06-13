@@ -12,6 +12,10 @@ import (
 
 func Root(c *cli.Context) error {
 	newRootName := c.String("new")
+	if c.Bool("list") {
+		listRoots(c)
+		return nil
+	}
 	if newRootName == "" {
 		cli.ShowCommandHelp(c, "root")
 		return nil

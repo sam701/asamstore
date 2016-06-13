@@ -90,8 +90,6 @@ func (s *DataStore) walkKeys(keyHandler func(key string)) error {
 	})
 }
 
-const blobsHash = "blobs-hash.txt"
-
 func (s *DataStore) saveStateHash() string {
 	hash := md5.New()
 	s.walkKeys(func(key string) {

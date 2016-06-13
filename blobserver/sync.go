@@ -133,14 +133,3 @@ const (
 	syncStatusSkipping  = 0
 	syncStatusReceiving = 1
 )
-
-func (s *remoteSync) compareKeys(localKey, remoteKey string) int {
-	diff := strings.Compare(localKey, remoteKey)
-	switch diff {
-	case -1:
-		s.sendLocalBlob(localKey)
-	case 1:
-		s.retrieveRemoteBlob(remoteKey)
-	}
-	return diff
-}

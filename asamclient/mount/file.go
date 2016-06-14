@@ -1,7 +1,7 @@
 package mount
 
 import (
-	"bytes"
+	"log"
 	"os"
 	"time"
 
@@ -15,6 +15,9 @@ type file struct {
 	unixPermission os.FileMode
 	unixMTime      time.Time
 	parts          []*schema.BytesPart
+
+	lastPart        *schema.BytesPart
+	lastPartContent []byte
 }
 
 func (f *file) Name() string {
@@ -42,12 +45,33 @@ func (f *file) Attr(ctx context.Context, attr *fuse.Attr) error {
 	return nil
 }
 
-func (f *file) ReadAll(ctx context.Context) ([]byte, error) {
-	var buf bytes.Buffer
-	for _, part := range f.parts {
-		if ok := bsClient.Get(part.ContentRef, &buf); !ok {
-			logUnmountAndExit("Cannot read blob", part.ContentRef)
+func (f *file) loadBytePart(offset uint64) {
+	if f.lastPart != nil && f.lastPart.Offset <= offset && offset < f.lastPart.Offset+f.lastPart.Size {
+		return
+	}
+	for _, v := range f.parts {
+		if offset >= v.Offset && offset < v.Offset+v.Size {
+			f.lastPart = v
+			f.lastPartContent = bsClient.Get(v.ContentRef)
+			if f.lastPartContent == nil {
+				log.Fatalln("Cannot get content", v.ContentRef)
+			}
+			return
 		}
 	}
-	return buf.Bytes(), nil
+	log.Fatalln("Cannot found byte part for offset", offset, "in", f.name)
+}
+
+func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	f.loadBytePart(uint64(req.Offset))
+
+	offset := int(req.Offset) - int(f.lastPart.Offset)
+	end := offset + req.Size
+	if end > len(f.lastPartContent) {
+		end = len(f.lastPartContent)
+	}
+
+	resp.Data = f.lastPartContent[offset:end]
+
+	return nil
 }

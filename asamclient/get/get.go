@@ -18,10 +18,12 @@ func Get(c *cli.Context) error {
 	cfg := config.ReadConfig(c.GlobalString("config"))
 	bsClient := client.NewClient(cfg)
 
-	ok := bsClient.Get(schema.BlobRef(ref), os.Stdout)
+	data := bsClient.Get(schema.BlobRef(ref))
 
-	if !ok {
+	if data == nil {
 		log.Println("No content exists with such ref")
+	} else {
+		os.Stdout.Write(data)
 	}
 	return nil
 }

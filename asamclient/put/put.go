@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/sam701/asamstore/asamclient/client"
 	"github.com/sam701/asamstore/asamclient/config"
 	"github.com/sam701/asamstore/asamclient/index"

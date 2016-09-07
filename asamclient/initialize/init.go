@@ -16,7 +16,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/sam701/asamstore/asamclient/config"
 )
 

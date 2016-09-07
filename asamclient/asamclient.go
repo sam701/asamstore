@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/sam701/asamstore/asamclient/get"
 	"github.com/sam701/asamstore/asamclient/initialize"
 	"github.com/sam701/asamstore/asamclient/mount"

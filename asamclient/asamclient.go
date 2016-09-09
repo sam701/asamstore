@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path"
 
 	"github.com/sam701/asamstore/asamclient/commands/get"
 	"github.com/sam701/asamstore/asamclient/commands/initialize"
@@ -21,7 +22,8 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "config, c",
-			Usage: "path to config.toml",
+			Usage: "path to `CONFIG`",
+			Value: path.Join(os.Getenv("HOME"), ".config/asamstore/config.toml"),
 		},
 	}
 	app.Commands = []cli.Command{

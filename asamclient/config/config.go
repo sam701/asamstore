@@ -28,9 +28,6 @@ func (c *Configuration) BlobKeyFile() string {
 }
 
 func ReadConfig(configPath string) *Configuration {
-	if configPath == "" {
-		configPath = path.Join(os.Getenv("HOME"), ".config/asamstore/config.toml")
-	}
 	f, err := os.Open(configPath)
 	if err != nil {
 		log.Fatalln("ERROR", err)

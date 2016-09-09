@@ -3,11 +3,11 @@ package root
 import (
 	"log"
 
-	"github.com/urfave/cli"
 	"github.com/sam701/asamstore/asamclient/client"
 	"github.com/sam701/asamstore/asamclient/config"
 	"github.com/sam701/asamstore/asamclient/index"
 	"github.com/sam701/asamstore/asamclient/schema"
+	"github.com/urfave/cli"
 )
 
 func Root(c *cli.Context) error {

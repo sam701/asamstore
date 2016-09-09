@@ -2,20 +2,21 @@ package index
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/sam701/asamstore/asamclient/schema"
 )
 
 type Commit struct {
-	Root       schema.BlobRef
-	Commit     schema.BlobRef
-	Content    schema.BlobRef
-	CommitTime string
+	Root       schema.BlobRef            `json:"-"`
+	Commit     schema.BlobRef            `json:"commit"`
+	Content    schema.BlobRef            `json:"content"`
+	CommitTime string                    `json:"commitTime"`
+	Changes    []*schema.AttributeChange `json:"changes,omitempty"`
 }
 
 func (i *Index) AddCommit(c *Commit) {
@@ -25,7 +26,10 @@ func (i *Index) AddCommit(c *Commit) {
 	}
 	defer f.Close()
 
-	fmt.Fprintln(f, c.Commit, c.Content, c.CommitTime)
+	err = json.NewEncoder(f).Encode(c)
+	if err != nil {
+		log.Fatalln("ERROR", err)
+	}
 }
 
 func (i *Index) GetCommits(root schema.BlobRef) []*Commit {
@@ -38,13 +42,13 @@ func (i *Index) GetCommits(root schema.BlobRef) []*Commit {
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		pp := strings.Split(scanner.Text(), " ")
-		res = append(res, &Commit{
-			Root:       root,
-			Commit:     schema.BlobRef(pp[0]),
-			Content:    schema.BlobRef(pp[1]),
-			CommitTime: pp[2],
-		})
+		var c Commit
+		err = json.Unmarshal([]byte(scanner.Text()), &c)
+		if err != nil {
+			log.Fatalln("ERROR", err)
+		}
+
+		res = append(res, &c)
 	}
 	return res
 }

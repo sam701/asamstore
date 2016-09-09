@@ -4,12 +4,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/sam701/asamstore/asamclient/commands/get"
+	"github.com/sam701/asamstore/asamclient/commands/initialize"
+	"github.com/sam701/asamstore/asamclient/commands/ls"
+	"github.com/sam701/asamstore/asamclient/commands/mount"
+	"github.com/sam701/asamstore/asamclient/commands/put"
+	"github.com/sam701/asamstore/asamclient/commands/root"
 	"github.com/urfave/cli"
-	"github.com/sam701/asamstore/asamclient/get"
-	"github.com/sam701/asamstore/asamclient/initialize"
-	"github.com/sam701/asamstore/asamclient/mount"
-	"github.com/sam701/asamstore/asamclient/put"
-	"github.com/sam701/asamstore/asamclient/root"
 )
 
 func main() {
@@ -51,9 +52,25 @@ func main() {
 					Name:  "root",
 					Usage: "root node",
 				},
+				cli.StringFlag{
+					Name:  "tags, t",
+					Usage: "Space separated list of `TAGS`",
+				},
 			},
 			ArgsUsage: "<path to content>",
 			Action:    put.PutAction,
+		},
+		{
+			Name:      "ls",
+			Usage:     "List contents having specified tags",
+			ArgsUsage: "<tag>[ <tag>...]",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "root",
+					Usage: "root node",
+				},
+			},
+			Action: ls.LsAction,
 		},
 		{
 			Name:      "get",

@@ -7,13 +7,14 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
-	"github.com/urfave/cli"
 	"github.com/sam701/asamstore/asamclient/client"
 	"github.com/sam701/asamstore/asamclient/config"
 	"github.com/sam701/asamstore/asamclient/index"
 	"github.com/sam701/asamstore/asamclient/schema"
+	"github.com/urfave/cli"
 )
 
 var bsClient *client.BlobStorageClient
@@ -45,17 +46,33 @@ func PutAction(c *cli.Context) error {
 
 	ref := putFile(contentPath)
 	commits := ix.GetCommits(rootRef)
-	ll := len(commits)
-	if ll > 0 && commits[ll-1].Content == ref {
+	if len(commits) > 0 && commits[len(commits)-1].Content == ref {
 		log.Println("No changes")
 	} else {
-		cs := getCommitSchema(rootRef, ref)
+		tags := getTags(c)
+		cs := getCommitSchema(rootRef, ref, tags)
 		commitRef := bsClient.PutSchema(cs)
-		ix.AddCommit(&index.Commit{rootRef, commitRef, ref, cs.CommitTime})
+		ix.AddCommit(&index.Commit{rootRef, commitRef, ref, cs.CommitTime, tags})
 		bsClient.UpdateServerState()
 	}
 
 	return nil
+}
+
+func getTags(c *cli.Context) []*schema.AttributeChange {
+	tagsStr := c.String("tags")
+	if tagsStr == "" {
+		return nil
+	}
+
+	tags := strings.Fields(tagsStr)
+	at := &schema.AttributeChange{
+		AttributeName: "tags",
+		ChangeType:    schema.AttributeChangeTypeSet,
+		Values:        tags,
+	}
+
+	return []*schema.AttributeChange{at}
 }
 
 func putFile(filePath string) schema.BlobRef {
@@ -102,10 +119,11 @@ func getDirSchema(fi os.FileInfo, entries []schema.BlobRef) *schema.Schema {
 	return s
 }
 
-func getCommitSchema(root, content schema.BlobRef) *schema.Schema {
+func getCommitSchema(root, content schema.BlobRef, tags []*schema.AttributeChange) *schema.Schema {
 	s := schema.NewSchema(schema.ContentTypeCommit)
 	s.RootRef = root
 	s.CommitTime = time.Now().Format(time.RFC3339)
 	s.ContentRef = content
+	s.ContentAttributeChanges = tags
 	return s
 }

@@ -8,9 +8,10 @@ type Schema struct {
 	RootName string `json:"rootName,omitempty"`
 
 	// for a commit
-	CommitTime string  `json:"commitTime,omitempty"`
-	RootRef    BlobRef `json:"root,omitempty"`
-	ContentRef BlobRef `json:"contentRef,omitempty"`
+	CommitTime              string             `json:"commitTime,omitempty"`
+	RootRef                 BlobRef            `json:"root,omitempty"`
+	ContentRef              BlobRef            `json:"contentRef,omitempty"`
+	ContentAttributeChanges []*AttributeChange `json:"attributeChanges,omitempty"`
 
 	FileName string `json:"fileName,omitempty"`
 

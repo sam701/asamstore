@@ -54,29 +54,25 @@ func (c *BlobStorageClient) blobUrl(key string) string {
 	return c.url + "/blobs/" + key
 }
 
-func (c *BlobStorageClient) Put(ref schema.BlobRef, content io.Reader) {
+func (c *BlobStorageClient) Exists(ref schema.BlobRef) bool {
 	key := string(ref)
 	resp, err := c.client.Get(c.blobUrl(key) + "?ifExists=true")
 	if err != nil {
 		log.Fatalln("ERROR", err)
 	}
 
-	switch resp.StatusCode {
-	case 404:
-		// not exists
+	return resp.StatusCode == 204
+}
 
-		// send content to the server
-		resp, err = c.client.Post(c.blobUrl(key), "application/octet-stream", c.enc.encryptingReader(content))
+func (c *BlobStorageClient) Put(ref schema.BlobRef, content io.Reader) {
+	if !c.Exists(ref) {
+		resp, err := c.client.Post(c.blobUrl(string(ref)), "application/octet-stream", c.enc.encryptingReader(content))
 		if err != nil {
 			log.Fatalln("ERROR", err)
 		}
 		if resp.StatusCode != 204 {
 			handleUnexpectedResponse(resp)
 		}
-	case 204:
-		// content already exists
-	default:
-		handleUnexpectedResponse(resp)
 	}
 }
 
